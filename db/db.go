@@ -641,6 +641,30 @@ func (db *DB) UnarchiveConversation(ctx context.Context, conversationID string) 
 	return &conversation, err
 }
 
+// PinConversation pins a conversation to the top of the list
+func (db *DB) PinConversation(ctx context.Context, conversationID string) (*generated.Conversation, error) {
+	var conversation generated.Conversation
+	err := db.pool.Tx(ctx, func(ctx context.Context, tx *Tx) error {
+		q := generated.New(tx.Conn())
+		var err error
+		conversation, err = q.PinConversation(ctx, conversationID)
+		return err
+	})
+	return &conversation, err
+}
+
+// UnpinConversation unpins a conversation
+func (db *DB) UnpinConversation(ctx context.Context, conversationID string) (*generated.Conversation, error) {
+	var conversation generated.Conversation
+	err := db.pool.Tx(ctx, func(ctx context.Context, tx *Tx) error {
+		q := generated.New(tx.Conn())
+		var err error
+		conversation, err = q.UnpinConversation(ctx, conversationID)
+		return err
+	})
+	return &conversation, err
+}
+
 // DeleteConversation deletes a conversation and all its messages
 func (db *DB) DeleteConversation(ctx context.Context, conversationID string) error {
 	return db.pool.Tx(ctx, func(ctx context.Context, tx *Tx) error {

@@ -213,19 +213,26 @@ function App() {
           (c) => c.conversation_id === update.conversation!.conversation_id,
         );
 
+        let updated: ConversationWithState[];
         if (existingIndex >= 0) {
-          // Update existing conversation in place, preserving working state
-          // (working state is updated separately via conversation_state)
-          const updated = [...prev];
+          // Update existing conversation, preserving working state
+          updated = [...prev];
           updated[existingIndex] = {
             ...update.conversation!,
             working: prev[existingIndex].working,
           };
-          return updated;
         } else {
-          // Add new conversation at the top (not working by default)
-          return [{ ...update.conversation!, working: false }, ...prev];
+          // Add new conversation (not working by default)
+          updated = [...prev, { ...update.conversation!, working: false }];
         }
+
+        // Sort: pinned first, then by updated_at descending
+        return updated.sort((a, b) => {
+          if (a.pinned !== b.pinned) {
+            return a.pinned ? -1 : 1;
+          }
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        });
       });
     } else if (update.type === "delete" && update.conversation_id) {
       setConversations((prev) => prev.filter((c) => c.conversation_id !== update.conversation_id));

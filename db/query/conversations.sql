@@ -14,7 +14,7 @@ WHERE slug = ?;
 -- name: ListConversations :many
 SELECT * FROM conversations
 WHERE archived = FALSE AND parent_conversation_id IS NULL
-ORDER BY updated_at DESC
+ORDER BY pinned DESC, updated_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: ListArchivedConversations :many
@@ -26,7 +26,7 @@ LIMIT ? OFFSET ?;
 -- name: SearchConversations :many
 SELECT * FROM conversations
 WHERE slug LIKE '%' || ? || '%' AND archived = FALSE AND parent_conversation_id IS NULL
-ORDER BY updated_at DESC
+ORDER BY pinned DESC, updated_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: SearchConversationsWithMessages :many
@@ -40,7 +40,7 @@ WHERE c.archived = FALSE
     OR json_extract(m.user_data, '$.text') LIKE '%' || ? || '%'
     OR m.llm_data LIKE '%' || ? || '%'
   )
-ORDER BY c.updated_at DESC
+ORDER BY c.pinned DESC, c.updated_at DESC
 LIMIT ? OFFSET ?;
 
 -- name: SearchArchivedConversations :many
@@ -79,6 +79,18 @@ RETURNING *;
 -- name: UnarchiveConversation :one
 UPDATE conversations
 SET archived = FALSE, updated_at = CURRENT_TIMESTAMP
+WHERE conversation_id = ?
+RETURNING *;
+
+-- name: PinConversation :one
+UPDATE conversations
+SET pinned = TRUE, updated_at = CURRENT_TIMESTAMP
+WHERE conversation_id = ?
+RETURNING *;
+
+-- name: UnpinConversation :one
+UPDATE conversations
+SET pinned = FALSE, updated_at = CURRENT_TIMESTAMP
 WHERE conversation_id = ?
 RETURNING *;
 

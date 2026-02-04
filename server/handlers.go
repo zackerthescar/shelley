@@ -528,6 +528,12 @@ func (s *Server) conversationMux() *http.ServeMux {
 	mux.HandleFunc("POST /{id}/unarchive", func(w http.ResponseWriter, r *http.Request) {
 		s.handleUnarchiveConversation(w, r, r.PathValue("id"))
 	})
+	mux.HandleFunc("POST /{id}/pin", func(w http.ResponseWriter, r *http.Request) {
+		s.handlePinConversation(w, r, r.PathValue("id"))
+	})
+	mux.HandleFunc("POST /{id}/unpin", func(w http.ResponseWriter, r *http.Request) {
+		s.handleUnpinConversation(w, r, r.PathValue("id"))
+	})
 	mux.HandleFunc("POST /{id}/delete", func(w http.ResponseWriter, r *http.Request) {
 		s.handleDeleteConversation(w, r, r.PathValue("id"))
 	})
@@ -1293,6 +1299,56 @@ func (s *Server) handleUnarchiveConversation(w http.ResponseWriter, r *http.Requ
 	conversation, err := s.db.UnarchiveConversation(ctx, conversationID)
 	if err != nil {
 		s.logger.Error("Failed to unarchive conversation", "conversationID", conversationID, "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Notify conversation list subscribers
+	go s.publishConversationListUpdate(ConversationListUpdate{
+		Type:         "update",
+		Conversation: conversation,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(conversation)
+}
+
+// handlePinConversation handles POST /conversation/<id>/pin
+func (s *Server) handlePinConversation(w http.ResponseWriter, r *http.Request, conversationID string) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	conversation, err := s.db.PinConversation(ctx, conversationID)
+	if err != nil {
+		s.logger.Error("Failed to pin conversation", "conversationID", conversationID, "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Notify conversation list subscribers
+	go s.publishConversationListUpdate(ConversationListUpdate{
+		Type:         "update",
+		Conversation: conversation,
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(conversation)
+}
+
+// handleUnpinConversation handles POST /conversation/<id>/unpin
+func (s *Server) handleUnpinConversation(w http.ResponseWriter, r *http.Request, conversationID string) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	ctx := r.Context()
+	conversation, err := s.db.UnpinConversation(ctx, conversationID)
+	if err != nil {
+		s.logger.Error("Failed to unpin conversation", "conversationID", conversationID, "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}

@@ -191,6 +191,28 @@ class ApiService {
     return response.json();
   }
 
+  async pinConversation(conversationId: string): Promise<Conversation> {
+    const response = await fetch(`${this.baseUrl}/conversation/${conversationId}/pin`, {
+      method: "POST",
+      headers: { "X-Shelley-Request": "1" },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to pin conversation: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
+  async unpinConversation(conversationId: string): Promise<Conversation> {
+    const response = await fetch(`${this.baseUrl}/conversation/${conversationId}/unpin`, {
+      method: "POST",
+      headers: { "X-Shelley-Request": "1" },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to unpin conversation: ${response.statusText}`);
+    }
+    return response.json();
+  }
+
   async deleteConversation(conversationId: string): Promise<void> {
     const response = await fetch(`${this.baseUrl}/conversation/${conversationId}/delete`, {
       method: "POST",

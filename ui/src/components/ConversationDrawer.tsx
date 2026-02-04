@@ -215,6 +215,20 @@ function ConversationDrawer({
     }
   };
 
+  const handlePin = async (e: React.MouseEvent, conversationId: string, isPinned: boolean) => {
+    e.stopPropagation();
+    try {
+      if (isPinned) {
+        await api.unpinConversation(conversationId);
+      } else {
+        await api.pinConversation(conversationId);
+      }
+      // SSE will automatically update the conversation list
+    } catch (err) {
+      console.error("Failed to toggle pin:", err);
+    }
+  };
+
   const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
     if (!confirm("Are you sure you want to permanently delete this conversation?")) {
@@ -407,8 +421,18 @@ function ConversationDrawer({
                                 }}
                               />
                             ) : (
-                              <div className="conversation-title">
-                                {getConversationPreview(conversation)}
+                              <div className="conversation-title" style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                                {conversation.pinned && (
+                                  <svg
+                                    fill="currentColor"
+                                    viewBox="0 0 24 24"
+                                    style={{ width: "0.75rem", height: "0.75rem", flexShrink: 0, opacity: 0.7 }}
+                                    title="Pinned"
+                                  >
+                                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                  </svg>
+                                )}
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{getConversationPreview(conversation)}</span>
                               </div>
                             )}
                           </div>
@@ -441,6 +465,26 @@ function ConversationDrawer({
                               className="conversation-actions"
                               style={{ display: "flex", gap: "0.25rem", marginLeft: "auto" }}
                             >
+                              <button
+                                onClick={(e) => handlePin(e, conversation.conversation_id, conversation.pinned)}
+                                className="btn-icon-sm"
+                                title={conversation.pinned ? "Unpin" : "Pin to top"}
+                                aria-label={conversation.pinned ? "Unpin conversation" : "Pin conversation"}
+                              >
+                                <svg
+                                  fill={conversation.pinned ? "currentColor" : "none"}
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                  style={{ width: "1rem", height: "1rem" }}
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
+                                  />
+                                </svg>
+                              </button>
                               <button
                                 onClick={(e) => handleStartRename(e, conversation)}
                                 className="btn-icon-sm"
