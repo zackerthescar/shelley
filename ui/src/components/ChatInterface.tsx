@@ -8,7 +8,12 @@ import {
 } from "../types";
 import { api } from "../services/api";
 import { ThemeMode, getStoredTheme, setStoredTheme, applyTheme } from "../services/theme";
-import { setFaviconStatus } from "../services/favicon";
+import {
+  setFaviconStatus,
+  getNotificationsEnabled,
+  setNotificationsEnabled,
+  requestNotificationPermission,
+} from "../services/favicon";
 import MessageComponent from "./Message";
 import MessageInput from "./MessageInput";
 import DiffViewer from "./DiffViewer";
@@ -587,6 +592,7 @@ function ChatInterface({
   // Settings modal removed - configuration moved to status bar for empty conversations
   const [showOverflowMenu, setShowOverflowMenu] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>(getStoredTheme);
+  const [notificationsEnabled, setNotificationsEnabledState] = useState(getNotificationsEnabled);
   const [showDiffViewer, setShowDiffViewer] = useState(false);
   const [diffViewerInitialCommit, setDiffViewerInitialCommit] = useState<string | undefined>(
     undefined,
@@ -1579,6 +1585,39 @@ function ChatInterface({
                     </svg>
                   </button>
                 </div>
+
+                {/* Notifications toggle */}
+                <div className="overflow-menu-divider" />
+                <button
+                  className="overflow-menu-item"
+                  onClick={async () => {
+                    if (!notificationsEnabled) {
+                      const granted = await requestNotificationPermission();
+                      if (granted) {
+                        setNotificationsEnabledState(true);
+                        setNotificationsEnabled(true);
+                      }
+                    } else {
+                      setNotificationsEnabledState(false);
+                      setNotificationsEnabled(false);
+                    }
+                  }}
+                >
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    style={{ width: "1.25rem", height: "1.25rem", marginRight: "0.75rem" }}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                  Notifications {notificationsEnabled ? "On" : "Off"}
+                </button>
               </div>
             )}
           </div>

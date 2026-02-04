@@ -6,6 +6,48 @@ type FaviconStatus = "working" | "ready";
 let currentStatus: FaviconStatus = "ready";
 let originalSVG: string | null = null;
 
+// Notifications kludge - lives here because we already track working state
+const NOTIFICATIONS_STORAGE_KEY = "shelley-notifications-enabled";
+
+export function getNotificationsEnabled(): boolean {
+  return localStorage.getItem(NOTIFICATIONS_STORAGE_KEY) === "true";
+}
+
+export function setNotificationsEnabled(enabled: boolean): void {
+  localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, enabled ? "true" : "false");
+}
+
+export async function requestNotificationPermission(): Promise<boolean> {
+  if (!("Notification" in window)) {
+    return false;
+  }
+  if (Notification.permission === "granted") {
+    return true;
+  }
+  if (Notification.permission === "denied") {
+    return false;
+  }
+  const result = await Notification.requestPermission();
+  return result === "granted";
+}
+
+function showCompletionNotification(): void {
+  if (!getNotificationsEnabled()) return;
+  if (Notification.permission !== "granted") return;
+  if (!document.hidden) return; // only notify when tab is backgrounded
+
+  const notification = new Notification("Shelley", {
+    body: "Response complete ✨",
+    icon: "/favicon.svg",
+    tag: "shelley-response-complete", // prevents duplicate notifications
+  });
+
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+}
+
 // Get the existing favicon link (injected by server)
 function getFaviconLink(): HTMLLinkElement | null {
   return document.querySelector('link[rel="icon"]');
@@ -46,6 +88,11 @@ function addStatusDot(svg: string, status: FaviconStatus): string {
 
 // Update the favicon to reflect the current status
 export function setFaviconStatus(status: FaviconStatus): void {
+  // Kludge: notify when agent finishes (working → ready)
+  if (currentStatus === "working" && status === "ready") {
+    showCompletionNotification();
+  }
+
   if (status === currentStatus && originalSVG !== null) {
     return;
   }
